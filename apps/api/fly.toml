@@ -1,0 +1,32 @@
+app = "ddeongkyu-hong-tion-api"
+primary_region = "nrt"
+kill_signal = "SIGTERM"
+kill_timeout = "5s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  release_command = "/app/bin/migrate"
+
+[env]
+  ALLOW_DEV_USER_HEADER = "false"
+  DATABASE_SSL = "true"
+  DATABASE_SSL_VERIFY = "none"
+  PHX_HOST = "ddeongkyu-hong-tion-api.fly.dev"
+  PHX_SERVER = "true"
+  POOL_SIZE = "5"
+  PORT = "4000"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

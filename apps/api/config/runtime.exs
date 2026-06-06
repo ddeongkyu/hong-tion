@@ -102,23 +102,24 @@ config :hongtion_api,
       System.get_env("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   supabase_jwks_url: supabase_jwks_url
 
-if config_env() == :dev and System.get_env("DATABASE_URL") do
-  database_ssl =
-    if System.get_env("DATABASE_SSL", "true") in ~w(true 1) do
-      [
-        verify:
-          if(System.get_env("DATABASE_SSL_VERIFY", "none") == "peer",
-            do: :verify_peer,
-            else: :verify_none
-          )
-      ]
-    else
-      false
-    end
+database_ssl_options = fn ->
+  if System.get_env("DATABASE_SSL", "true") in ~w(true 1) do
+    [
+      verify:
+        if(System.get_env("DATABASE_SSL_VERIFY", "none") == "peer",
+          do: :verify_peer,
+          else: :verify_none
+        )
+    ]
+  else
+    false
+  end
+end
 
+if config_env() == :dev and System.get_env("DATABASE_URL") do
   config :hongtion_api, HongtionApi.Repo,
     url: System.fetch_env!("DATABASE_URL"),
-    ssl: database_ssl,
+    ssl: database_ssl_options.(),
     pool_size: String.to_integer(System.get_env("POOL_SIZE", "5"))
 end
 
@@ -133,8 +134,8 @@ if config_env() == :prod do
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :hongtion_api, HongtionApi.Repo,
-    # ssl: true,
     url: database_url,
+    ssl: database_ssl_options.(),
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
     # pool_count: 4,

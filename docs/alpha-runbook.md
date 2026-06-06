@@ -5,6 +5,7 @@
 - Phoenix prod must have `ALLOW_DEV_USER_HEADER` unset or `false`.
 - `CORS_ORIGINS` must contain only deployed frontend origins.
 - `PHX_HOST`, `DATABASE_URL`, `SECRET_KEY_BASE`, `SUPABASE_URL`, and `SUPABASE_PUBLISHABLE_KEY` must be present.
+- Fly API app must use release migration command `/app/bin/migrate`.
 - Supabase SQL files through `014_alpha_safety_guards.sql` must be applied.
 - Storage bucket `workspace-files` must exist with the policies from `010_storage.sql`.
 
@@ -21,6 +22,12 @@ SMOKE_API_URL=https://api.example.com \
 SMOKE_ACCESS_TOKEN=<supabase-access-token> \
 SMOKE_WORKSPACE_ID=<workspace-id> \
 npm run smoke
+```
+
+Fly API check:
+
+```sh
+SMOKE_API_URL=https://ddeongkyu-hong-tion-api.fly.dev npm run smoke
 ```
 
 ## Alpha User Checklist
