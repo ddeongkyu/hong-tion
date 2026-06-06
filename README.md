@@ -1,5 +1,7 @@
 # Hong-tion
 
+[![CI](https://github.com/ddeongkyu/hong-tion/actions/workflows/ci.yml/badge.svg)](https://github.com/ddeongkyu/hong-tion/actions/workflows/ci.yml)
+
 Hong-tion is a collaborative document workspace inspired by Notion.
 
 ## Structure
