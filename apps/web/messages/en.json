@@ -181,27 +181,14 @@
       "code": "channel \"page:*\", HongtionApiWeb.PageChannel"
     },
     "panel": {
-      "title": "Work status",
-      "apiStatus": "API status",
-      "checking": "Checking",
-      "connected": "Connected",
-      "unavailable": "Unavailable",
+      "title": "Document info",
       "authRequired": "Sign in needed",
-      "workspaces": "Workspaces",
       "page": "Page",
       "blocks": "Blocks",
-      "database": "DB",
-      "refresh": "Refresh",
-      "bootstrapping": "Preparing",
-      "ready": "Ready",
       "presence": "Presence",
-      "presenceBody": "Three people are currently in this document.",
-      "next": "Next",
-      "nextBody": "Wire Supabase JWT verification into Ecto-backed schemas.",
-      "history": "Recent changes",
-      "historyBody": "Project structure and the realtime channel entry point are ready.",
-      "online": "Online",
-      "realtime": "Realtime"
+      "presenceBody": "Members in the same document can keep editing together.",
+      "next": "Tip",
+      "nextBody": "Share the page and leave comments so teammates can continue with the same context."
     }
   }
 }

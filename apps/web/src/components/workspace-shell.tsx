@@ -4,7 +4,6 @@ import {
   AtSign,
   Bell,
   BookOpen,
-  Check,
   CheckCircle2,
   CircleAlert,
   ChevronRight,
@@ -201,25 +200,13 @@ type WorkspaceShellLabels = {
   };
   panel: {
     title: string;
-    apiStatus: string;
-    connected: string;
-    unavailable: string;
     authRequired: string;
-    workspaces: string;
     page: string;
     blocks: string;
-    database: string;
-    refresh: string;
-    bootstrapping: string;
-    ready: string;
     presence: string;
     presenceBody: string;
     next: string;
     nextBody: string;
-    history: string;
-    historyBody: string;
-    online: string;
-    realtime: string;
   };
   editor: {
     untitled: string;
@@ -292,16 +279,7 @@ type SlashMenuState = {
   query: string;
 };
 
-type RealtimeState = "idle" | "connecting" | "joined" | "error";
-
 type WorkspacePanel = "notifications" | "share" | "more" | null;
-
-type PresenceStatePayload = Record<string, { metas?: Array<Record<string, unknown>> }>;
-
-type PresenceDiffPayload = {
-  joins?: PresenceStatePayload;
-  leaves?: PresenceStatePayload;
-};
 
 const collaborators = ["HK", "ML", "JP"];
 
@@ -370,8 +348,6 @@ export function WorkspaceShell({ labels, locale }: WorkspaceShellProps) {
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
   const [slashSelectionIndex, setSlashSelectionIndex] = useState(0);
   const [collapsedPageIds, setCollapsedPageIds] = useState<Set<string>>(new Set());
-  const [realtimeState, setRealtimeState] = useState<RealtimeState>("idle");
-  const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [workspacePanel, setWorkspacePanel] = useState<WorkspacePanel>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -608,8 +584,6 @@ export function WorkspaceShell({ labels, locale }: WorkspaceShellProps) {
     const pageId = state.activePage?.id;
 
     if (!pageId) {
-      setRealtimeState("idle");
-      setOnlineUserIds([]);
       return;
     }
 
@@ -619,11 +593,8 @@ export function WorkspaceShell({ labels, locale }: WorkspaceShellProps) {
       const token = await getCurrentToken();
 
       if (!token || cancelled) {
-        setRealtimeState("idle");
         return;
       }
-
-      setRealtimeState("connecting");
 
       const socket = createHongtionSocket(token);
       socket.connect();
@@ -631,28 +602,6 @@ export function WorkspaceShell({ labels, locale }: WorkspaceShellProps) {
       const channel = socket.channel(`page:${pageId}`, {});
       socketRef.current = socket;
       channelRef.current = channel;
-
-      channel.on("presence_state", (payload: PresenceStatePayload) => {
-        setOnlineUserIds(userIdsFromPresenceState(payload));
-      });
-
-      channel.on("presence_diff", (payload: PresenceDiffPayload) => {
-        setOnlineUserIds((current) => applyPresenceDiff(current, payload));
-      });
-
-      channel.on("presence:sync", (payload: { user_id?: string }) => {
-        const userId = payload.user_id;
-
-        if (!userId) {
-          return;
-        }
-
-        setOnlineUserIds((current) =>
-          current.includes(userId)
-            ? current
-            : [...current, userId],
-        );
-      });
 
       channel.on("block:insert", (payload: { block?: Block }) => {
         if (payload.block) {
@@ -681,23 +630,7 @@ export function WorkspaceShell({ labels, locale }: WorkspaceShellProps) {
         }
       });
 
-      channel
-        .join()
-        .receive("ok", () => {
-          if (!cancelled) {
-            setRealtimeState("joined");
-          }
-        })
-        .receive("error", () => {
-          if (!cancelled) {
-            setRealtimeState("error");
-          }
-        })
-        .receive("timeout", () => {
-          if (!cancelled) {
-            setRealtimeState("error");
-          }
-        });
+      channel.join();
     }
 
     void connectRealtime();
@@ -708,7 +641,6 @@ export function WorkspaceShell({ labels, locale }: WorkspaceShellProps) {
       socketRef.current?.disconnect();
       channelRef.current = null;
       socketRef.current = null;
-      setOnlineUserIds([]);
     };
   }, [state.activePage?.id]);
 
@@ -2449,19 +2381,11 @@ export function WorkspaceShell({ labels, locale }: WorkspaceShellProps) {
               </div>
 
               <div className="mt-5 space-y-5">
-                <StatusPanel
-                  blockCount={state.blocks.length}
-                  database={state.database}
+                <SaveNotice
                   labels={labels}
-                  onlineCount={onlineUserIds.length}
                   saveError={saveError}
                   saveState={saveState}
-                  pageCount={state.pages.length}
-                  realtimeState={realtimeState}
                   saving={saving}
-                  status={state.status}
-                  workspaceCount={state.workspaces.length}
-                  onRefresh={() => void load(activePage?.id)}
                 />
 
                 <CommentsPanel
@@ -3790,113 +3714,6 @@ function FileBlockPreview({ block, labels }: { block: Block; labels: WorkspaceSh
   );
 }
 
-function StatusPanel({
-  blockCount,
-  database,
-  labels,
-  onRefresh,
-  onlineCount,
-  pageCount,
-  realtimeState,
-  saveError,
-  saveState,
-  saving,
-  status,
-  workspaceCount,
-}: {
-  blockCount: number;
-  database?: DatabaseHealth;
-  labels: WorkspaceShellLabels;
-  onRefresh: () => void;
-  onlineCount: number;
-  pageCount: number;
-  realtimeState: RealtimeState;
-  saveError: string | null;
-  saveState: SaveState;
-  saving: boolean;
-  status: LoadState["status"];
-  workspaceCount: number;
-}) {
-  return (
-    <div className="rounded-md border border-[#d8ddd6] bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Check size={16} className="text-[#16635b]" />
-          <h3 className="text-sm font-semibold">{labels.panel.apiStatus}</h3>
-        </div>
-        <button
-          className="grid size-8 place-items-center rounded-md border border-[#d8ddd6] bg-[#fbfbf8] text-[#4d574c]"
-          onClick={onRefresh}
-          title={labels.panel.refresh}
-          type="button"
-        >
-          <RefreshCw size={15} />
-        </button>
-      </div>
-      <div className="mt-4 space-y-3 text-sm">
-        <StatusRow
-          label="API"
-          ok={status === "ready"}
-          value={
-            status === "ready"
-              ? saving || saveState === "saving"
-                ? labels.editor.saving
-                : saveState === "error"
-                  ? labels.editor.error
-                : labels.editor.saved
-              : status === "loading"
-                ? labels.panel.bootstrapping
-                : labels.panel.unavailable
-          }
-        />
-        <StatusRow
-          label={labels.panel.database}
-          ok={Boolean(database)}
-          value={database?.database && database.schema ? `${database.database}/${database.schema}` : "-"}
-        />
-        <StatusRow
-          label={labels.panel.workspaces}
-          ok={workspaceCount > 0}
-          value={String(workspaceCount)}
-        />
-        <StatusRow label={labels.panel.page} ok={pageCount > 0} value={String(pageCount)} />
-        <StatusRow label={labels.panel.blocks} ok={blockCount > 0} value={String(blockCount)} />
-        <StatusRow
-          label={labels.panel.realtime}
-          ok={realtimeState === "joined"}
-          value={
-            realtimeState === "joined"
-              ? labels.panel.connected
-              : realtimeState === "connecting"
-                ? labels.panel.bootstrapping
-              : labels.panel.unavailable
-          }
-        />
-        <StatusRow label={labels.panel.online} ok={onlineCount > 0} value={String(onlineCount)} />
-      </div>
-
-      {saveError ? (
-        <p className="mt-3 flex items-start gap-2 break-words text-xs leading-5 text-[#9f1239]">
-          <CircleAlert className="mt-0.5 shrink-0" size={14} />
-          {saveError}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function StatusRow({ label, ok, value }: { label: string; ok: boolean; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="flex items-center gap-2 text-[#687267]">
-        <span className={`size-2 rounded-full ${ok ? "bg-[#16635b]" : "bg-[#b8bfb6]"}`} />
-        {label}
-      </span>
-      <span className="min-w-0 truncate font-medium text-[#24211d]">{value}</span>
-    </div>
-  );
-}
-
 function InfoSection({
   body,
   icon,
@@ -3915,6 +3732,40 @@ function InfoSection({
       <p className="mt-2 text-sm leading-6 text-[#4d574c]">{body}</p>
     </div>
   );
+}
+
+function SaveNotice({
+  labels,
+  saveError,
+  saveState,
+  saving,
+}: {
+  labels: WorkspaceShellLabels;
+  saveError: string | null;
+  saveState: SaveState;
+  saving: boolean;
+}) {
+  if (saveError || saveState === "error") {
+    return (
+      <div className="rounded-md border border-[#f1c7c7] bg-[#fff7f7] px-3 py-2 text-sm leading-6 text-[#9f1239]">
+        <p className="flex items-start gap-2 break-words">
+          <CircleAlert className="mt-1 shrink-0" size={14} />
+          {saveError ?? labels.editor.error}
+        </p>
+      </div>
+    );
+  }
+
+  if (saving || saveState === "saving") {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-[#d8ddd6] bg-white px-3 py-2 text-sm text-[#4d574c]">
+        <Loader2 className="animate-spin text-[#16635b]" size={14} />
+        {labels.editor.saving}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 async function getCurrentToken() {
@@ -4443,19 +4294,6 @@ function blockFromPlainTextLine(line: string): {
   }
 
   return { content: { text: line }, type: "paragraph" };
-}
-
-function userIdsFromPresenceState(payload: PresenceStatePayload) {
-  return Object.keys(payload).sort((a, b) => a.localeCompare(b));
-}
-
-function applyPresenceDiff(current: string[], payload: PresenceDiffPayload) {
-  const nextUserIds = new Set(current);
-
-  Object.keys(payload.joins ?? {}).forEach((userId) => nextUserIds.add(userId));
-  Object.keys(payload.leaves ?? {}).forEach((userId) => nextUserIds.delete(userId));
-
-  return [...nextUserIds].sort((a, b) => a.localeCompare(b));
 }
 
 function nextPosition(seed = 0) {

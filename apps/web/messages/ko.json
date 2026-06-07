@@ -181,27 +181,14 @@
       "code": "channel \"page:*\", HongtionApiWeb.PageChannel"
     },
     "panel": {
-      "title": "작업 상태",
-      "apiStatus": "API 상태",
-      "checking": "확인 중",
-      "connected": "연결됨",
-      "unavailable": "연결 안 됨",
+      "title": "문서 정보",
       "authRequired": "로그인 필요",
-      "workspaces": "워크스페이스",
       "page": "페이지",
       "blocks": "블록",
-      "database": "DB",
-      "refresh": "새로고침",
-      "bootstrapping": "준비 중",
-      "ready": "준비 완료",
       "presence": "접속자",
-      "presenceBody": "세 명이 현재 문서에 접속 중입니다.",
-      "next": "다음 작업",
-      "nextBody": "Supabase JWT 검증과 Ecto 스키마 마이그레이션을 연결합니다.",
-      "history": "최근 변경",
-      "historyBody": "프로젝트 골격과 실시간 채널 입구가 준비됐습니다.",
-      "online": "온라인",
-      "realtime": "실시간"
+      "presenceBody": "같은 문서에 들어온 멤버와 함께 편집할 수 있습니다.",
+      "next": "사용 팁",
+      "nextBody": "페이지를 공유하고 댓글을 남기면 팀원이 같은 맥락에서 이어서 작업할 수 있습니다."
     }
   }
 }
